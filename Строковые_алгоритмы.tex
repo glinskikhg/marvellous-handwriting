@@ -1,0 +1,196 @@
+\documentclass[letterpaper, 12pt]{article}
+
+\usepackage[russian]{babel}
+\usepackage[utf8x]{inputenc}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{hyperref}
+\usepackage{fancyvrb}
+
+\author{Глинских Георгий}
+\title{Конспект лекций по строковым алгоритмам}
+
+\newtheorem{stm}{Утверждение}
+\newtheorem{definition}{Определение}
+
+\newcommand{\textm}{\texttt{text}}
+\newcommand{\patm}{\texttt{pat}}
+\newcommand{\linem}{\noindent\rule{\textwidth}{1pt}}
+
+% Можно потом попробовать p
+\newenvironment{figurem}[1][]
+  {\begin{figure}[t]
+  \caption{#1}
+  \centering
+  }
+  {
+  \end{figure}
+  }
+
+\DefineVerbatimEnvironment%
+  {verbm}{Verbatim}
+  {gobble=-2,numbers=left,numbersep=2mm,
+  frame=single,framerule=1pt}
+
+\begin{document}
+
+\maketitle
+
+\section{Вводные замечания}
+
+Строки -- конечные последовательности символов над множеством, называемым
+алфавитом. Здесь и далее я буду полагать, что алфавит -- множество чисел
+$\{1, \ldots, \sigma\}$ и что строки индексируются с $1$\footnote{Так
+удобнее для математиков, но хуже для программистов.}:
+$$w = w(1)w(2)\ldots{}w(n) = w(1,n).$$
+
+Введем понятия периода и грани строки.
+\begin{definition}
+  \label{period_dfn}
+  Периодом строки назовем число $p$, такое, что
+  $$\forall i : s(i) = s(i + p).$$ 
+\end{definition}
+
+\begin{stm}
+  Следующие определения равнозначны:
+  \begin{enumerate}
+    \item $p$ -- период строки $w$.
+    \item $s(p + 1, n)$ и суффикс, и префикс $w$.
+    \item Существует слова $a$, $b$: $b$ префикс $a$ и $w = a^k b$.
+  \end{enumerate}
+\end{stm}
+\begin{proof}
+
+$1 \Rightarrow 2$. Посимвольно сравнивая, $s(1, n-p) = s(p + 1, n)$.
+
+$2 \Rightarrow 3$. Положим $a = s(1, p)$. Тогда видно, что
+$s(p + 1,2p) = s(1,p) = a$,
+Аналогично $$\forall l : s((l-1)p + 1, lp) = a.$$
+Остается взять $b = s(kp + 1, n)$, где $k$ -- наибольшее из чисел $l$.
+
+$3 \Rightarrow 1$. Очевидно.
+
+\end{proof}
+
+\begin{definition}
+  \label{border_dfn}
+  Гранью строки назовем суффикс, одновременно являющийся префиксом. 
+\end{definition}
+
+\begin{stm}
+  Число $0 < p \le n$ -- период $s$ согда $s(1, n-p)$ -- грань $s$.
+\end{stm}
+\begin{proof}
+  Заметим, что $s(1, n-p) = s(p + 1, n)$ по условию, и тогда достаточно
+  воспользоваться пунктом 2 предыдущего утверждения.
+\end{proof}
+
+\begin{quote}
+  Важно мыслить объекты, которые обрабатываются алгоритмами, очень (очень!)
+  большой размерности. Тогда будет появляться нужная интуиция.
+\end{quote}
+
+\section{Алгоритм Крошмора-Перрена}
+
+При помощи периода можно улучшить обычный алгоритм поиска подстроки в строке.
+Далее будем называть его Ord, его сложность
+$T(\operatorname{Ord}) = O(|\textm||\patm|)$.
+
+\begin{quote}
+  Инвариант цикла в Ord -- вхождения с началом в $\textm(1, i)$ рассмотрены.
+\end{quote}
+
+\begin{figurem}[Обычный алгоритм поиска подстроки в строке (Ord)]
+\begin{verbm}
+  i = 1
+  пока i + |pat| <= |text|:  # O(|text|)
+    если text(i, i + |pat|) = pat(1, |pat|):  # O(|pat|)
+      верни i
+    i += 1
+\end{verbm}
+\end{figurem}
+
+Пусть теперь известен $p$ -- минимальный период строки $\patm$. Тогда этот
+алгоритм можно улучшить для нахождения серии вхождений
+(вхождения, расположенные достаточно близко друг к другу). Заметим, что
+вхождения находятся на расстоянии не меньше $p$ (иначе противоречие с 
+минимальностью периода), следовательно, при
+нахождениии вхождения, можно не смотреть на следущие $p$ возможных позиций.
+Получим алгоритм Per.
+\begin{quote}
+  Инвариант цикла в Per -- для нахождения вхождения 
+  остается рассмотреть $|\patm| - b + 1$ позиций.
+\end{quote}
+
+\begin{figurem}[Улучшенный алгоритм поиска подстроки в строке (Per)]
+\begin{verbm}
+  i = 1, b = 1
+  пока i + |pat| <= |text|:  # O(|text| / p)
+    c = max { c : pat(b, c) = text(i + b, i + c) }  # O(|pat|)
+    если с < |pat|:
+      i += 1, b = 1
+    иначе:  # c = |pat|
+      верни i
+      i += p, b = |pat| - p + 1
+\end{verbm}
+\end{figurem}
+
+Теперь рассмотрим наконец алгоритм Крошмора-Перрена. Его будем обозначать TW:
+в англоязычной литературе его называют two-way алгоритмом. Он быстрый:
+$T(\operatorname{TW}) = O(|\textm| + |\patm|), S(\operatorname{TW}) = O(1)$.
+
+\begin{definition}
+  Локальным периодом разложения $w = ab$ назовем число $q$ такое, что
+  $$\forall i \in \{|u| - q, \ldots, |u|\}: \quad s(i) = s(i + q).$$
+\end{definition}
+
+Заметим, что число $p$ -- период $w$ будет локальным периодом для любого
+разложения.
+
+\begin{definition}
+  Критическим назовем разложение $w = ab$, для которого минимальный локальный
+  период совпадает с периодом строки $w$.
+\end{definition}
+
+\begin{stm}
+  У любой строки есть критическое разложение $w = ab$: $|a| = u < p$, где $p$
+  -- период $w$. 
+\end{stm}
+\begin{proof}
+
+Заметим сначала, что любой локальный период $q$ для критического разложения 
+$(a,b)$ с условием $q < |b|$ делится на $p$. Из критичности, $q \ge p$. Тогда 
+$(xy)^kx$ с $|xy| = p, |x| < p$ будет префиксом $b$. Но тогда $x$ будет 
+суффиксом $a$ и префиксом $b$. Пришли к противоречию: удалось найти локальный
+период $|x| < p \le q$.
+  
+\end{proof}
+
+Рассмотрим алгоритм TW1.
+
+\begin{figurem}[Алгоритм TW1]
+\begin{verbm}
+  # ограничения: u < p, u критическая для pat, p - период pat
+  i = 1, b = 1
+  пока i + |par| <= |text|:  # O(|text|)
+    c = max(u, b)
+    d = max { d : pat(c, d) = text(i + c, i + d) }
+    если d < |pat|:
+      i += d - u + 1
+      b = 1
+    иначе:  # d = |pat|
+      c = u - 1
+      d = min { j > b : pat(d, c) = text(i + d, i + c) }
+      если d < b:
+        верни i
+      i += p, b = |pat| - p + 1
+\end{verbm}
+\end{figurem}
+
+\begin{stm}
+  Алгоритм TW1 находит все вхождения $\patm$ в $\textm$ со сложностью
+  $$T(\operatorname{TW1}) = O(|w|), \quad S(\operatorname{TW1}) = O(1).$$
+\end{stm}
+
+
+\end{document}
